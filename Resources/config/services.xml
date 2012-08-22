@@ -1,0 +1,93 @@
+<?xml version="1.0" ?>
+
+<container xmlns="http://symfony.com/schema/dic/services"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+
+    <parameters>
+        <parameter key="webmi_tracking.listener.request.class">WEBMI\TrackingBundle\EventListener\RequestListener</parameter>
+        <parameter key="webmi_tracking.listener.controller.class">WEBMI\TrackingBundle\EventListener\ControllerListener</parameter>
+        <parameter key="webmi_tracking.twig_extension.class">WEBMI\TrackingBundle\Twig\Extension\TrackTwigExtension</parameter>
+        <parameter key="webmi_tracking.tracking_manager.entity.class">WEBMI\TrackingBundle\Entity\TrackingManager</parameter>
+        <parameter key="webmi_tracking.listener.security.login.class">WEBMI\TrackingBundle\Security\InteractiveLoginListener</parameter>
+        <parameter key="webmi_tracking.listener.security.login.state.success.class">%webmi_tracking.listener.security.login.class%</parameter>
+        <parameter key="webmi_tracking.listener.security.login.state.failure.class">%webmi_tracking.listener.security.login.class%</parameter>
+    </parameters>
+
+    <!--
+    <parameters>
+        <parameter key="webmi_tracking.example.class">WEBMI\TrackingBundle\Example</parameter>
+    </parameters>
+    -->
+    <services>
+        
+        <service id="webmi_tracking.tracking_manager.default" class="%webmi_tracking.tracking_manager.entity.class%" public="true">
+            <argument type="service" id="doctrine.orm.entity_manager" />
+            <argument>%webmi_tracking.model.tracking.class%</argument>
+        </service>
+        
+        <service id="webmi_tracking.request_listener.default" class="%webmi_tracking.listener.request.class%">
+            <tag name="kernel.event_listener" event="kernel.request" method="onKernelRequest" />
+            <argument type="service" id="service_container" />
+            <argument type="service" id="webmi_tracking.tracking_manager.default" />
+            <argument type="service" id="sonata.page.manager.site" />
+            <argument type="service" id="sonata.page.manager.page" />
+        </service>
+        <service id="webmi_tracking.controller_listener.default" class="%webmi_tracking.listener.controller.class%">
+            <tag name="kernel.event_listener" event="kernel.controller" method="onKernelController" />
+            <argument type="service" id="annotation_reader" />
+            <argument type="service" id="service_container" />
+            <argument type="service" id="webmi_tracking.tracking_manager.default" />
+        </service>
+        
+        <!-- Authenthication Login Tracking. Not needed anymore because its splitted into Success and Failure Listener -->
+        <!--<service id="webmi_tracking.security.interactive_login_listener" class="WEBMI\TrackingBundle\Security\InteractiveLoginListener">
+            <argument type="service" id="webmi_tracking.tracking_manager" />
+            <argument type="service" id="service_container" />
+            <tag name="kernel.event_listener" event="security.interactive_login" method="onSecurityInteractiveLogin" />
+        </service>-->
+        
+        <!--security.authentication.success-->
+        <service id="webmi_tracking.security.interactive_login_listener.success.default" class="%webmi_tracking.listener.security.login.state.success.class%">
+            <argument type="service" id="webmi_tracking.tracking_manager.default" />
+            <argument type="service" id="service_container" />
+            <tag name="kernel.event_listener" event="security.authentication.success" method="onSecurityInteractiveLoginSuccess" />
+        </service>
+        
+        <!--security.authentication.failure-->
+        <service id="webmi_tracking.security.interactive_login_listener.failure.default" class="%webmi_tracking.listener.security.login.state.failure.class%">
+            <argument type="service" id="webmi_tracking.tracking_manager.default" />
+            <argument type="service" id="service_container" />
+            <tag name="kernel.event_listener" event="security.authentication.failure" method="onSecurityInteractiveLoginFailure" />
+        </service>
+        
+        <service id="track.twig.extension" class="%webmi_tracking.twig_extension.class%" public="false">
+            <argument type="service" id="service_container" />
+            <tag name="twig.extension" />
+        </service>
+        
+        <!--<service id="webmi_tracking_annotation" class="WEBMI\TrackingBundle\Annotations\Driver\AnnotationDriver" public="false">
+            <argument type="service" id="annotation_reader" />
+            <argument type="service" id="service_container" />
+            <argument type="service" id="webmi_tracking.tracking_manager" />
+            <tag name="kernel.event_listener" event="kernel.controller" method="onKernelController" />
+        </service>-->
+        <!--
+        some_annotation_driver:
+        class: SomeNamespace\SomeBundle\Annotations\Driver\AnnotationDriver #Point class
+        tags: [{name: kernel.event_listener, event: kernel.controller, method: onKernelController}] #Point event
+        arguments: [@annotation_reader] # Pass annotation_reader into constructor of our service
+        
+        -->
+        <!--contenturl.twig.extension:
+        class: WEBMI\KbBundle\Twig\Extension\ContentUrlTwigExtension
+        arguments: [@service_container]
+        tags:
+            - { name: twig.extension }-->
+        <!--<service id="webmi_tracking.example" class="%webmi_tracking.example.class%">
+            <argument type="service" id="service_id" />
+            <argument>plain_value</argument>
+            <argument>%parameter_name%</argument>
+        </service>-->
+    </services>
+</container>
